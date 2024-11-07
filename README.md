@@ -113,7 +113,70 @@ Ajustar configurações de timeout e corrigir erro de timeout execedido ao invoc
 ```
 // INSIRA SUA ANÁLISE OU PARECER ABAIXO
 
+const express = require('express');
 
+const app = express();
+const port = 8080;
+
+// Função para criar uma Promise que simula um timeout
+function timeoutPromise(ms, promise) {
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            reject(new Error('Tempo limite excedido!'));
+        }, ms);
+
+        promise
+            .then((result) => {
+                clearTimeout(timeout);
+                resolve(result);
+            })
+            .catch((error) => {
+                clearTimeout(timeout);
+                reject(error);
+            });
+    });
+}
+
+// Função simulando chamada externa
+async function externalService() {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve('Resposta da chamada externa');
+        }, 2000); // Ajustar o tempo para ser menor que o timeout
+    });
+}
+
+// Rota de health check
+app.get('/api/health', (req, res) => {
+    res.send('OK');
+});
+
+// Rota que faz a chamada simulada com timeout
+app.get('/api/timeout', async (req, res) => {
+    try {
+        const result = await timeoutPromise(3000, externalService());
+        res.send(result);
+    } catch (error) {
+        res.status(500).send(`Erro: ${error.message}`);
+    }
+});
+
+// Iniciando o servidor
+app.listen(port, () => {
+    console.log(`Servidor rodando em http://localhost:${port}`);
+});
+
+Executar a Aplicação
+código acima salvo em um arquivo chamado server-timeout.js.
+No terminal, onde o arquivo está localizado foi executado:
+bash
+node server-timeout.js
+
+Chamar o Endpoint
+No terminal, chamamos o endpoint e testar o timeout:
+bash
+curl localhost:8080/api/timeout
+Com essas alterações, a função externalService agora finaliza dentro do tempo limite de 3000 ms, evitando o erro de "tempo limite excedido".
 
 ```
 
